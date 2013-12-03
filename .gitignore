@@ -37,4 +37,4 @@ nosetests.xml
 
 # development settings
 settings_local.py
-fe5807905e01e21e5da9d7a3e49fb739bd0d2ebe-privatekey.p12
+*-privatekey.p12

@@ -20,7 +20,7 @@ else:
 
 
 # single user
-def create_drive_service_web(client_id, client_secrect, oauth_scope, redirect_uri):
+def create_drive_service_2_steps(client_id, client_secrect, oauth_scope, redirect_uri):
 	# Run through the OAuth flow and retrieve credentials
 	flow = OAuth2WebServerFlow(client_id, client_secrect, oauth_scope, redirect_uri)
 	authorize_url = flow.step1_get_authorize_url()
@@ -32,12 +32,12 @@ def create_drive_service_web(client_id, client_secrect, oauth_scope, redirect_ur
 	http = httplib2.Http()
 	http = credentials.authorize(http)
 
-	drive_service = build('drive', 'v2', http=http)
-	return drive_service
+	return build('drive', 'v2', http=http)
 
 
 # domain-wide
-def create_drive_service(service_account_pkcs12_file_path, service_account_email, user_email):
+def create_drive_service(service_account_pkcs12_file,\
+						service_account_email, scope, user_email):
 	"""Build and returns a Drive service object authorized with the service accounts
 		that act on behalf of the given user.
 
@@ -46,12 +46,13 @@ def create_drive_service(service_account_pkcs12_file_path, service_account_email
 	Returns:
 		Drive service object.
 	"""
-	f = file(service_account_pkcs12_file_path, 'rb')
+	f = file(service_account_pkcs12_file, 'rb')
 	key = f.read()
 	f.close()
 
-	credentials = SignedJwtAssertionCredentials(service_account_email, key,
-					scope='https://www.googleapis.com/auth/drive', sub=user_email)
+	credentials = SignedJwtAssertionCredentials(service_account_email, key,\
+						scope=scope, sub=user_email)
+
 	http = httplib2.Http()
 	http = credentials.authorize(http)
 
@@ -61,8 +62,6 @@ def create_drive_service(service_account_pkcs12_file_path, service_account_email
 
 ###################### File ###########################################
 
-# Folder: mimeType = 'application/vnd.google-apps.folder'
-# Text file: mimeType = 'text/plain'
 
 # Folder: mimeType = 'application/vnd.google-apps.folder'
 # Text file: mimeType = 'text/plain'
@@ -168,12 +167,26 @@ def insert_perm(service, obj_id, value, perm_type, role):
 		'role': role
 	}
 	try:
-		return service.permissions().insert(
-				fileId=obj_id, body=new_permission).execute()
+		perm = service.permissions().insert(
+					fileId=obj_id, body=new_permission).execute()
+		return perm['id']
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
 
 	return None
+
+
+# copy file permissions across domains using service account
+def copy_perm(src_service, dest_service, src_user_email, dest_user_email, src_obj_id, dest_obj_id):
+	src_perms = retrieve_perms(src_service, src_obj_id)
+	for perm in src_perms:
+		if 'emailAddress' in perm.keys():
+			value = perm['emailAddress']
+			if value != src_user_email and value != dest_user_email:
+				perm_type = perm['type']
+				role = perm['role']
+				# return inserted permission id
+				return insert_perm(dest_service, dest_obj_id, value, perm_type, role)
 
 
 def remove_perm(service, obj_id, permission_id):
@@ -209,7 +222,7 @@ def get_perm_id_for_email(service, email):
 	return None
 
 
-
+# make a copy of a file/folder on a same account
 def copy_file(service, origin_file_id, copy_title):
 	"""Copy an existing file.
 
@@ -223,8 +236,14 @@ def copy_file(service, origin_file_id, copy_title):
 	"""
 	copied_file = {'title': copy_title}
 	try:
-		return service.files().copy(
-			fileId=origin_file_id, body=copied_file).execute()
+		file = service.files().copy(
+					fileId=origin_file_id, body=copied_file).execute()
+
+		# copy permission
+		# if copy_perms:
+		# 	copy_perm(service, service, src_user_email, dest_user_email, origin_file_id, file['id'])
+
+		return file['id']
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
 
@@ -236,7 +255,7 @@ def copy_file(service, origin_file_id, copy_title):
 ###################### Folder ###########################################
 
 
-def create_a_folder(service, title, desc, parentid=None):
+def insert_folder(service, title, desc, parentid=None):
 	body = {
 		'title': title,
 		'description': desc,
@@ -245,16 +264,20 @@ def create_a_folder(service, title, desc, parentid=None):
 	if parentid:
 		body['parents'] = [{'id': parentid}]
 
-	folder = service.files().insert(body=body).execute()
-	pprint.pprint(folder)
-	return folder['id']
+	try:
+		folder = service.files().insert(body=body).execute()
+		pprint.pprint(folder)
+		return folder['id']
+	except errors.HttpError, error:
+		print 'An error occurred: %s' % error
+	return None
 
 
 def copy_folder(service, folder_id, folder_title):
+	# 1. copy
 	pass
 
-def insert_folder_perm(service, folder_id, value, perm_type, role):
-	pass
+
 
 
 #########################################################################
@@ -262,44 +285,7 @@ def insert_folder_perm(service, folder_id, value, perm_type, role):
 
 if __name__ == "__main__":
 
-	drive_service = create_drive_service_web(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
+	#drive_service = create_drive_service_web_2_steps(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
 
-	# filename = 'doc2.txt'
-	# title = 'Super genius document'
-	# desc = 'This is a genius document'
-
-	# insert_a_file(drive_service, filename, title, desc)
-	allfiles = retrieve_all(drive_service)
-	# print allfiles
-	for myfile in allfiles:
-		if 'mimeType' in myfile.keys():
-	# 		print "Mimetype of %s is: %s\n" % (myfile['title'], myfile['mimeType'])
-			print "Id of %s is: %s" % (myfile['title'], myfile['id'])
-	# 		if myfile['mimeType'] == 'application/vnd.google-apps.folder':
-	# 			print "Copying folder %s" % (myfile['title'])
-	# new_folderid = create_a_folder(drive_service, 'Home folder', 'Holy genius folder!!!!')
-
-
-	# 	# perms = retrieve_perms(drive_service, myfile['id'])
-	# 	# print "Permission of %s (%s) is: %s" % (myfile['title'], myfile['id'], perms)
-	# 	print "File id of %s is: %s" % (myfile['title'], myfile['id'])
-
-
-	# copy_file(drive_service, '0B_mF99vmvWTEWmZObEpuUTF1ZU0', 'Copy of genius document')
-
-	# mypermid = get_perm_id_for_email(drive_service, 'genius@ssis.edu.vn')
-	# print "Permission ID for genius@ssis.edu.vn: %s" % (mypermid)
-
-	# org_fileid = '0B_mF99vmvWTEcDZzc3hVVmRoOUU'
-	# copy_fileid = '0B_mF99vmvWTEM0lvVXhJWUw5blk'
-	# org_perms = retrieve_perms(drive_service, org_fileid)
-	# for perm in org_perms:
-	# 	if 'emailAddress' in perm.keys():
-	# 		value = perm['emailAddress']
-	# 		if value != 'nguyentrongdangtrinh@gmail.com':
-	# 			perm_type = perm['type']
-	# 			role = perm['role']
-	# 			insert_file_perm(drive_service, copy_fileid, value, perm_type, role)
-
-	# permid = get_perm_id_for_email(drive_service, 'trnguyen@ssis.edu.vn')
-	# remove_perm(drive_service, copy_fileid, permid)
+	test_useremail = 'umasse@student.ssis.edu.vn'
+	service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE, SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, test_useremail)
