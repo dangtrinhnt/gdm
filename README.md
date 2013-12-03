@@ -8,7 +8,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 + google-api-python-client==1.2
 + httplib2==0.8
-
++ pyOpenSSL==0.13.1
 
 ### 12/01/2013: Just add some utilities to manipulate google drive api, such as:
 

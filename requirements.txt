@@ -1,2 +1,6 @@
+argparse==1.2.1
 google-api-python-client==1.2
 httplib2==0.8
+pyOpenSSL==0.13.1
+wsgiref==0.1.2
+yolk==0.4.3

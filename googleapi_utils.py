@@ -2,10 +2,12 @@
 
 import httplib2
 import pprint
+import sys
 
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
 from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import SignedJwtAssertionCredentials
 from apiclient import errors
 
 import socket
@@ -17,8 +19,8 @@ else:
 
 
 
-
-def authorize_app(client_id, client_secrect, oauth_scope, redirect_uri):
+# single user
+def create_drive_service_web(client_id, client_secrect, oauth_scope, redirect_uri):
 	# Run through the OAuth flow and retrieve credentials
 	flow = OAuth2WebServerFlow(client_id, client_secrect, oauth_scope, redirect_uri)
 	authorize_url = flow.step1_get_authorize_url()
@@ -34,28 +36,73 @@ def authorize_app(client_id, client_secrect, oauth_scope, redirect_uri):
 	return drive_service
 
 
+# domain-wide
+def create_drive_service(service_account_pkcs12_file_path, service_account_email, user_email):
+	"""Build and returns a Drive service object authorized with the service accounts
+		that act on behalf of the given user.
+
+	Args:
+		user_email: The email of the user.
+	Returns:
+		Drive service object.
+	"""
+	f = file(service_account_pkcs12_file_path, 'rb')
+	key = f.read()
+	f.close()
+
+	credentials = SignedJwtAssertionCredentials(service_account_email, key,
+					scope='https://www.googleapis.com/auth/drive', sub=user_email)
+	http = httplib2.Http()
+	http = credentials.authorize(http)
+
+	return build('drive', 'v2', http=http)
+
+
 
 ###################### File ###########################################
 
 # Folder: mimeType = 'application/vnd.google-apps.folder'
 # Text file: mimeType = 'text/plain'
 
+# Folder: mimeType = 'application/vnd.google-apps.folder'
+# Text file: mimeType = 'text/plain'
+def insert_file(service, title, description, mime_type, filename, parent_id=None):
+	"""Insert new file.
 
-def insert_a_file(service, filename, title, desc):
-	# Insert a file
-	media_body = MediaFileUpload(filename, mimetype='text/plain', resumable=True)
+	Args:
+		service: Drive API service instance.
+		title: Title of the file to insert, including the extension.
+		description: Description of the file to insert.
+		parent_id: Parent folder's ID.
+		mime_type: MIME type of the file to insert.
+		filename: Filename of the file to insert.
+	Returns:
+		Inserted file metadata if successful, None otherwise.
+	"""
+	media_body = MediaFileUpload(filename, mimetype=mime_type, resumable=True)
 	body = {
 		'title': title,
-		'description': desc,
-		'mimeType': 'text/plain'
+		'description': description,
+		'mimeType': mime_type
 	}
 
-	file = service.files().insert(body=body, media_body=media_body).execute()
-	pprint.pprint(file)
+	# Set the parent folder.
+	if parent_id:
+		body['parents'] = [{'id': parent_id}]
+
+	try:
+		file = service.files().insert(
+					body=body,
+					media_body=media_body).execute()
+		return file['id']
+
+	except errors.HttpError, error:
+		print 'An error occured: %s' % error
+
+	return None
 
 
-
-def retrieve_all_files_and_folders(service):
+def retrieve_all(service):
 	"""Retrieve a list of File resources.
 
 	Args:
@@ -84,7 +131,7 @@ def retrieve_all_files_and_folders(service):
 	return result
 
 
-def retrieve_perms(service, file_id):
+def retrieve_perms(service, obj_id):
 	"""Retrieve a list of permissions.
 	Args:
 		service: Drive API service instance.
@@ -93,7 +140,7 @@ def retrieve_perms(service, file_id):
 		List of permissions.
 	"""
 	try:
-		permissions = service.permissions().list(fileId=file_id).execute()
+		permissions = service.permissions().list(fileId=obj_id).execute()
 		return permissions.get('items', [])
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
@@ -101,7 +148,7 @@ def retrieve_perms(service, file_id):
 	return None
 
 
-def insert_file_perm(service, file_id, value, perm_type, role):
+def insert_perm(service, obj_id, value, perm_type, role):
 	"""Insert a new permission.
 
 	Args:
@@ -122,14 +169,14 @@ def insert_file_perm(service, file_id, value, perm_type, role):
 	}
 	try:
 		return service.permissions().insert(
-				fileId=file_id, body=new_permission).execute()
+				fileId=obj_id, body=new_permission).execute()
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
 
 	return None
 
 
-def remove_perm(service, file_id, permission_id):
+def remove_perm(service, obj_id, permission_id):
 	"""Remove a permission.
 
 	Args:
@@ -139,7 +186,7 @@ def remove_perm(service, file_id, permission_id):
 	"""
 	try:
 		service.permissions().delete(
-			fileId=file_id, permissionId=permission_id).execute()
+			fileId=obj_id, permissionId=permission_id).execute()
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
 
@@ -215,22 +262,22 @@ def insert_folder_perm(service, folder_id, value, perm_type, role):
 
 if __name__ == "__main__":
 
-	drive_service = authorize_app(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
+	drive_service = create_drive_service_web(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
 
 	# filename = 'doc2.txt'
 	# title = 'Super genius document'
 	# desc = 'This is a genius document'
 
 	# insert_a_file(drive_service, filename, title, desc)
-	# allfiles = retrieve_all_files_and_folders(drive_service)
+	allfiles = retrieve_all(drive_service)
 	# print allfiles
-	# for myfile in allfiles:
-	# 	if 'mimeType' in myfile.keys():
+	for myfile in allfiles:
+		if 'mimeType' in myfile.keys():
 	# 		print "Mimetype of %s is: %s\n" % (myfile['title'], myfile['mimeType'])
-	# 		print "Id is: %s" % (myfile['id'])
+			print "Id of %s is: %s" % (myfile['title'], myfile['id'])
 	# 		if myfile['mimeType'] == 'application/vnd.google-apps.folder':
 	# 			print "Copying folder %s" % (myfile['title'])
-	new_folderid = create_a_folder(drive_service, 'Home folder', 'Holy genius folder!!!!')
+	# new_folderid = create_a_folder(drive_service, 'Home folder', 'Holy genius folder!!!!')
 
 
 	# 	# perms = retrieve_perms(drive_service, myfile['id'])
