@@ -11,7 +11,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 + pyOpenSSL==0.13.1
 
 
-### 12/04/2013: Added functionality:
+### 12/04/2013: Added functionalities:
 
 + Copy permissions
 + Copy all permissions of all files

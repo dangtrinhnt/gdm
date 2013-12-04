@@ -463,5 +463,6 @@ if __name__ == "__main__":
 
 	#drive_service = create_drive_service_web_2_steps(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
 
+	# the email_list maybe read from a csv file
 	email_list = [{'src_email': 'genius@olddomain.com', 'dest_email': 'genius@newdomain.com'}]
 	google_drive_migrate(email_list)
