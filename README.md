@@ -4,6 +4,9 @@ GDM - Google Drive Migration
 GDM will help you to migrate your Google Drive documents from one domain to another domain
 
 
+### Updates
+
+
 ##### + 12/04/2013: Added functionalities:
 
 + Copy permissions
@@ -29,11 +32,14 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 ### Requirements
 
+
 + google-api-python-client==1.2
 + httplib2==0.8
 + pyOpenSSL==0.13.1
 
+
 ### References:
+
 
 * [*https://developers.google.com/drive/quickstart-python*](https://developers.google.com/drive/quickstart-python)
 * [*https://developers.google.com/drive/v2/reference/*](https://developers.google.com/drive/v2/reference/)
