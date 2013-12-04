@@ -4,7 +4,7 @@ GDM - Google Drive Migration
 GDM will help you to migrate your Google Drive documents from one domain to another domain
 
 
-##### 12/04/2013: Added functionalities:
+##### + 12/04/2013: Added functionalities:
 
 + Copy permissions
 + Copy all permissions of all files
@@ -14,7 +14,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 + Migrate files and folders
 
 
-##### 12/01/2013: Just add some utilities to manipulate google drive api, such as:
+##### + 12/01/2013: Just add some utilities to manipulate google drive api, such as:
 
 + authorize app
 + insert file
