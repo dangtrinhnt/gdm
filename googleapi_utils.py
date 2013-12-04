@@ -223,7 +223,7 @@ def get_perm_id_for_email(service, email):
 
 
 # make a copy of a file/folder on a same account
-def copy_file(service, origin_file_id, copy_title):
+def copy_file(service, origin_file_id, copy_title, parentid=None):
 	"""Copy an existing file.
 
 	Args:
@@ -235,6 +235,8 @@ def copy_file(service, origin_file_id, copy_title):
 		The copied file if successful, None otherwise.
 	"""
 	copied_file = {'title': copy_title}
+	if parentid:
+		copied_file['parents'] = [{'id': parentid}]
 	try:
 		file = service.files().copy(
 					fileId=origin_file_id, body=copied_file).execute()
@@ -266,18 +268,93 @@ def insert_folder(service, title, desc, parentid=None):
 
 	try:
 		folder = service.files().insert(body=body).execute()
-		pprint.pprint(folder)
+		# pprint.pprint(folder)
 		return folder['id']
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
 	return None
 
 
-def copy_folder(service, folder_id, folder_title):
-	# 1. copy
+def copy_folder(service, folder_id, folder_title, parentid=None):
+	# 1. create a folder with the same name in mydrive
+	# 2. make a copy of all files in the source folder
+	# 3. Asign the new folder as parents of the copied files
+	new_folderid = insert_folder(service, folder_title, folder_title, parentid)
+
+	query_string = "'%s' in parents" % (folder_id)
+
+	files = search_files(service, query_string)
+	for file in files:
+		if file['mimeType'] == 'application/vnd.google-apps.folder':
+			copy_folder(service, file['id'], file['title'], parentid=new_folderid)
+			print "Copy sub-folder"
+		else:
+			copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
+			print "Copy file %s of folder %s" % (copied_fileid, new_folderid)
+
+
+
+def search_files(service, query_string):
+	result = []
+	page_token = None
+	while True:
+		try:
+			param = {}
+			if page_token:
+				param['pageToken'] = page_token
+			param['q'] = query_string
+			files = service.files().list(**param).execute()
+
+			result.extend(files['items'])
+			page_token = files.get('nextPageToken')
+			if not page_token:
+				break
+		except errors.HttpError, error:
+			print 'An error occurred: %s' % error
+			break
+
+	return result
+
+
+def retrieve_shared_with_me_files(service):
+	query_string = 'sharedWithMe'
+	return search_files(service, query_string)
+
+
+
+# main operations
+
+# files_map = [ {'src': 'src_email@domain.com', 'dest': 'dest_email@domain.com', 'files': fileslist}, {},]
+
+def share_files_with_another(service, files_map=[]):
+	perm_type = 'user'
+	role = 'reader'
+	for fm in files_map:
+		value = fm['dest']
+		for file in fm['files']:
+			permid = insert_perm(service, file['id'], value, perm_type, role)
+			print "Share file %s of %s with %s" % (file['title'], fm['src'], fm['dest'])
+
+
+def make_a_copy_of_shared_files(service, shared_files):
+	for file in shared_files:
+		if file['mimeType'] == 'application/vnd.google-apps.folder':
+			copy_folder(service, file['id'], file['title'])
+		else:
+			fileid = copy_file(service, file['id'], file['title'])
+		# print "Copy file %s from shared with me" % (file['title'])
+
+
+def disable_sharing():
 	pass
 
 
+def copy_perms():
+	pass
+
+
+def google_drive_migrate(src_domain, dest_domain):
+	pass
 
 
 #########################################################################
@@ -287,5 +364,16 @@ if __name__ == "__main__":
 
 	#drive_service = create_drive_service_web_2_steps(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
 
-	test_useremail = 'umasse@student.ssis.edu.vn'
-	service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE, SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, test_useremail)
+	src_user_email = 'jsmith13@student.ssis.edu.vn'
+	dest_user_email = 'jsmith13@ssis.edu.vn'
+	# src_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE, SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, src_user_email)
+	# allfiles = retrieve_all(src_service)
+
+	# files_map = [ {'src': src_user_email, 'dest': dest_user_email, 'files': allfiles},]
+	# share_files_with_another(src_service, files_map)
+
+	dest_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE, SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, dest_user_email)
+	shared_files = retrieve_shared_with_me_files(dest_service)
+	# for file in shared_files:
+	# 	print "File %s was shared with me" % (file['title'])
+	make_a_copy_of_shared_files(dest_service, shared_files)
