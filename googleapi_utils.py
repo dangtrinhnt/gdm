@@ -432,7 +432,7 @@ def copy_perms(src_service, dest_service, src_user_email, dest_user_email, new_f
 					dest_user_email, file_map['src_id'], file_map['dest_id'])
 
 
-# email_list = [{'src_email': 'jsmith13@student.ssis.edu.vn', 'dest_email': 'jsmith13@ssis.edu.vn'}]
+# email_list = [{'src_email': 'genius@olddomain.com', 'dest_email': 'genius@newdomain.com'}]
 def google_drive_migrate(email_list):
 	for email_pair in email_list:
 		src_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
@@ -463,18 +463,5 @@ if __name__ == "__main__":
 
 	#drive_service = create_drive_service_web_2_steps(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
 
-	email_list = [{'src_email': 'jsmith13@student.ssis.edu.vn', 'dest_email': 'jsmith13@ssis.edu.vn'}]
+	email_list = [{'src_email': 'genius@olddomain.com', 'dest_email': 'genius@newdomain.com'}]
 	google_drive_migrate(email_list)
-
-	# src_email = 'jsmith13@student.ssis.edu.vn'
-	# dest_email = 'jsmith13@ssis.edu.vn'
-
-	# src_fileid = '0B0gdp13pQ9d1b3I5RmZfTVU4YXM'
-	# dest_fileid = '0BwEcJ8ZuhZNHYjBsUlBTRTZfc28'
-
-	# src_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
-	# 						SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, src_email)
-	# dest_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
-	# 						SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, dest_email)
-
-	# copy_perm(src_service, dest_service, src_email, dest_email, src_fileid, dest_fileid)
