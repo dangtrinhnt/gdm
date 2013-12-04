@@ -18,7 +18,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 + Create drive service with service account
 + Share files and folder
 + Disable sharing
-+ Migrate files and folders base on emails mapping list
++ Migrate files and folders
 
 
 ### 12/01/2013: Just add some utilities to manipulate google drive api, such as:
