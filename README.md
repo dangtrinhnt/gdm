@@ -46,9 +46,17 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
   + ["fatal error: Python.h: No such file or directory"](http://iambusychangingtheworld.blogspot.com/2013/12/fix-error-opensslsslh-no-such-file-or.html)
 + [The official guide for setting up Google Drive Domain-wide Service Account didn't work](http://iambusychangingtheworld.blogspot.com/2013/12/google-drive-api-how-work-with-domain.html)
 
-### References:
+
+### References
 
 
 * [*https://developers.google.com/drive/quickstart-python*](https://developers.google.com/drive/quickstart-python)
 * [*https://developers.google.com/drive/v2/reference/*](https://developers.google.com/drive/v2/reference/)
 
+
+### Contact
+
+If you found any bug or have questions, please contact me at:
+
++ Email: dangtrinhnt[at]gmail[dot]com
++ Twitter: [@dangtrinhnt](https://twitter.com/dangtrinhnt)
