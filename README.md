@@ -56,7 +56,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 ### Contact
 
-If you found any bug or have questions, please contact me at:
+Found bugs or have questions?:
 
-+ Email: dangtrinhnt[at]gmail[dot]com
++ Email: dangtrinhnt[at]gmail[dot]com - Trinh Nguyen
 + Twitter: [@dangtrinhnt](https://twitter.com/dangtrinhnt)
