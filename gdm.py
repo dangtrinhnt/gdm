@@ -19,6 +19,7 @@ else:
 
 
 
+
 # utilities
 def get_dict_data_from_csv_file(csv_file_path):
 	csv_file = open(csv_file_path, 'rb')
@@ -97,6 +98,15 @@ def create_drive_service(service_account_pkcs12_file,\
 
 
 ###################### File ###########################################
+
+
+def remove_no_parent_files(files):
+	tmp = files
+	for file in files:
+		if not file['parents']:
+			tmp.remove(file)
+	return tmp
+
 
 # get file by id
 def get_file(service, file_id):
@@ -246,7 +256,6 @@ def copy_perm(src_service, dest_service, src_user_email, dest_user_email, src_ob
 			if perm['emailAddress'] != src_user_email:
 				perm_type = perm['type']
 				role = perm['role']
-				# return inserted permission id
 				insert_perm(dest_service, dest_obj_id, value, perm_type, role)
 
 
@@ -283,7 +292,35 @@ def get_perm_id_for_email(service, email):
 	return None
 
 
-# make a copy of a file/folder on a same account
+
+def get_existed_files(service, org_obj_id, parentid='root'):
+	same_title_files = []
+	is_existed = False
+	is_old = False
+
+	org_file = get_file(service, org_obj_id)
+
+	# If parentid is provided, search in that folder,
+	# If no, search in root only by default
+	query_string = "'%s' in parents \
+					and title = '%s' \
+					and trashed = false" \
+					% (parentid, org_file['title'])
+
+	same_title_files = search_files(service, query_string)
+	if same_title_files:
+		is_existed = True
+		for s_file in same_title_files:
+			# if s_file['parents'][0]['id']==
+			if s_file['mimeType'] == org_file['mimeType']:
+				if s_file['modifiedDate'] < org_file['modifiedDate']:
+					is_old = True
+					break
+
+	return same_title_files, is_existed, is_old
+
+
+# make a copy of a file on a same account
 def copy_file(service, origin_file_id, copy_title, parentid=None):
 	"""Copy an existing file.
 
@@ -296,8 +333,11 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 		The copied file if successful, None otherwise.
 	"""
 	copied_file = {'title': copy_title}
+
+	# if the copying file is a child of a folder
 	if parentid:
 		copied_file['parents'] = [{'id': parentid}]
+
 	try:
 		file = service.files().copy(
 					fileId=origin_file_id, body=copied_file).execute()
@@ -334,7 +374,7 @@ def insert_folder(service, title, desc, parentid=None):
 def copy_folder(service, folder_id, folder_title, parentid=None):
 	# 1. create a folder with the same name in mydrive
 	# 2. make a copy of all files in the source folder
-	# 3. Asign the new folder as parents of the copied files
+	# 3. Assign the new folder as parents of the copied files
 
 	new_created_ids = []
 	new_folderid = insert_folder(service, folder_title, folder_title, parentid)
@@ -433,12 +473,12 @@ def copy_perms(src_service, dest_service, src_user_email, dest_user_email, new_f
 
 
 # email_list = [{'src_email': 'genius@olddomain.com', 'dest_email': 'genius@newdomain.com'}]
-def google_drive_migrate(email_list):
-	for email_pair in email_list:
+def google_drive_migrate(email_map_list):
+	for email_pair in email_map_list:
 		src_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
 							SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email_pair['src_email'])
 		allfiles = retrieve_all(src_service)
-		files_map = [ {'src': email_pair['src_email'], 'dest': email_pair['dest_email'], 'files': allfiles}]
+		files_map = [{'src': email_pair['src_email'], 'dest': email_pair['dest_email'], 'files': allfiles}]
 
 		# Step 1. share files with new account
 		shared_perms_list = share_files_with_another(src_service, files_map)
@@ -464,5 +504,5 @@ if __name__ == "__main__":
 	#drive_service = create_drive_service_web_2_steps(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
 
 	# the email_list maybe read from a csv file
-	email_list = [{'src_email': 'genius@olddomain.com', 'dest_email': 'genius@newdomain.com'}]
-	google_drive_migrate(email_list)
+	email_map_list = [{'src_email': 'genius@olddomain.com', 'dest_email': 'genius@newdomain.com'}]
+	google_drive_migrate(email_map_list)
