@@ -7,6 +7,11 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 ### Updates
 
 
+##### + 12/05/2013:
+
++ Get accounts which have duplicate files/folders
+
+
 ##### + 12/04/2013: Added functionalities:
 
 + Copy permissions
