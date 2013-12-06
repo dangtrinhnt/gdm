@@ -22,15 +22,15 @@ def export_user_has_dup_file(src_csv, dest_csv, condition_number):
 			print "Processing %s" % (email['email'])
 			service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
 							SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email['email'])
+			if service:
+				query = "trashed = false" # not looking for files in trash
+				allfiles = search_files(service, query)
 
-			query = "trashed = false" # not looking for files in trash
-			allfiles = search_files(service, query)
-
-			if allfiles:
-				if has_dup_file(allfiles):
-					print "User %s has duplicate file" % (email['email'])
-					has_dup_file_users.append(email)
-			print "Finish processing %s" % (email['email'])
+				if allfiles:
+					if has_dup_file(allfiles):
+						print "User %s has duplicate file" % (email['email'])
+						has_dup_file_users.append(email)
+				print "Finish processing %s" % (email['email'])
 
 	if has_dup_file_users:
 		write_dict_data_to_csv_file(dest_csv, has_dup_file_users)

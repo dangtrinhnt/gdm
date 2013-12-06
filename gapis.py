@@ -7,6 +7,7 @@ from apiclient.http import MediaFileUpload
 from apiclient import errors
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import SignedJwtAssertionCredentials
+from oauth2client.client import AccessTokenRefreshError
 
 from commons import *
 
@@ -27,7 +28,13 @@ def create_drive_service_2_steps(client_id, client_secrect, oauth_scope, redirec
 	http = httplib2.Http()
 	http = credentials.authorize(http)
 
-	return build('drive', 'v2', http=http)
+	try:
+		drive_service = build('drive', 'v2', http=http)
+		return drive_service
+	except AccessTokenRefreshError, error:
+		print 'Error when get drive service: %s' % error
+
+	return None
 
 
 # domain-wide
@@ -47,12 +54,24 @@ def create_drive_service(service_account_pkcs12_file,\
 
 	credentials = SignedJwtAssertionCredentials(service_account_email, key,\
 						scope=scope, sub=user_email)
+	print "Finish getting credentials"
 
 	http = httplib2.Http()
 	http = credentials.authorize(http)
 
-	return build('drive', 'v2', http=http)
+	print "Finish authorize"
 
+	try:
+		drive_service = build('drive', 'v2', http=http)
+		return drive_service
+	except AccessTokenRefreshError, error:
+		print "Error when getting drive service of user %s:\n > Error: %s"\
+						% (user_email, error)
+
+	return None
+
+
+######################### File utils #######################################
 
 # get file by id
 def get_file(service, file_id):
