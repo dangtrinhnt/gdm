@@ -23,9 +23,7 @@ def export_user_has_dup_file(src_csv, dest_csv, condition_number):
 			service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
 							SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email['email'])
 			if service:
-				query = "trashed = false" # not looking for files in trash
-				allfiles = search_files(service, query)
-
+				allfiles = retrieve_own_files(service)
 				if allfiles:
 					if has_dup_file(allfiles):
 						print "User %s has duplicate file" % (email['email'])

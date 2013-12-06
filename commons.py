@@ -1,5 +1,8 @@
 #! /usr/bin/python
 import csv
+from datetime import datetime
+# http://labix.org/python-dateutil
+from dateutil import parser
 
 
 # utilities
@@ -72,3 +75,22 @@ def has_dup_file(files):
 				tmp.append(file)
 
 	return False
+
+
+
+# check if the src_file is newer than the dest_file
+def is_newer(src_file, dest_file):
+	src_modified_date = parser.parse(src_file['modifiedDate'])
+	dest_modified_date = parser.parse(dest_file['modifiedDate'])
+
+	if src_modified_date > dest_modified_date:
+		return True
+
+	return False
+
+def get_filename_list(files):
+	filename_list = []
+	for file in files:
+		if file['title'] not in filename_list:
+			filename_list.append(file['title'])
+	return filename_list

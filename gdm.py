@@ -21,10 +21,8 @@ def google_drive_migrate(email_map_list):
 			dest_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
 								SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email_pair['dest_email'])
 			if dest_service:
-				# search file not in trash
-				allfiles = search_files(src_service, "trashed = false")
-				# remove files which have no parents (shared files)
-				allfiles = remove_no_parent_files(allfiles)
+
+				allfiles = retrieve_own_files(src_service)
 
 				files_map = [{'src': email_pair['src_email'], 'dest': email_pair['dest_email'], 'files': allfiles}]
 
@@ -40,7 +38,7 @@ def google_drive_migrate(email_map_list):
 				# Step 4. copy permissions
 				copy_perms(src_service, dest_service, email_pair['src_email'], email_pair['dest_email'], new_files_map)
 			else:
-				print "Skip processing user %s" % (email_pair['src_email'])
+				print "Canot initiate drive service of user %s. Skipped!" % (email_pair['dest_email'])
 		else:
 			print "Skip processing user %s" % (email_pair['src_email'])
 
