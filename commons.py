@@ -96,7 +96,7 @@ def is_newer(src_file, dest_file):
 	src_modified_date = parser.parse(src_file['modifiedDate'])
 	dest_modified_date = parser.parse(dest_file['modifiedDate'])
 
-	if src_modified_date > dest_modified_date:
+	if src_modified_date >= dest_modified_date:
 		return True
 
 	return False

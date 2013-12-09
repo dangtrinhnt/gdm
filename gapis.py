@@ -308,6 +308,38 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 	return None
 
 
+def copy_unique_file(service, org_file, parentid=None):
+	query = "title = '%s' and trashed = false" % org_file['title']
+	if parentid:
+		query += " and '%s' in parents" % parentid
+	else:
+		query += " and 'root' in parents"
+	existed_files = search_files(service, query)
+	if existed_files:
+		for file in existed_files:
+			if file['mimeType'] == org_file['mimeType']:
+				if not is_newer(file, org_file):
+					# 1. delete existed file
+					delete_file(service, file['id'])
+					# 2. copy new file
+					return copy_file(service, org_file['id'], org_file['title'], parentid)
+
+	return None
+
+
+def delete_file(service, file_id):
+	"""Permanently delete a file, skipping the trash.
+
+	Args:
+		service: Drive API service instance.
+		file_id: ID of the file to delete.
+	"""
+	try:
+		service.files().delete(fileId=file_id).execute()
+	except errors.HttpError, error:
+		print 'An error occurred: %s' % error
+
+
 def search_files(service, query_string):
 	result = []
 	page_token = None
@@ -373,6 +405,47 @@ def rename_file(service, file_id, new_title):
 	return None
 
 
+def update_file(service, file_id, new_title, new_description, new_mime_type,
+					new_filename, new_revision):
+	"""Update an existing file's metadata and content.
+
+	Args:
+		service: Drive API service instance.
+		file_id: ID of the file to update.
+		new_title: New title for the file.
+		new_description: New description for the file.
+		new_mime_type: New MIME type for the file.
+		new_filename: Filename of the new content to upload.
+		new_revision: Whether or not to create a new revision for this file.
+	Returns:
+		Updated file metadata if successful, None otherwise.
+	"""
+	try:
+		# First retrieve the file from the API.
+		file = service.files().get(fileId=file_id).execute()
+
+		# File's new metadata.
+		file['title'] = new_title
+		file['description'] = new_description
+		file['mimeType'] = new_mime_type
+
+		# File's new content.
+		media_body = MediaFileUpload(
+			new_filename, mimetype=new_mime_type, resumable=True)
+
+		# Send the request to the API.
+		updated_file = service.files().update(
+			fileId=file_id,
+			body=file,
+			newRevision=new_revision,
+			media_body=media_body).execute()
+		return updated_file
+	except errors.HttpError, error:
+		print 'An error occurred: %s' % error
+
+	return None
+
+
 #########################################################################
 
 ###################### Folder ###########################################
@@ -413,7 +486,8 @@ def copy_folder(service, folder_id, folder_title, parentid=None):
 			sub_created_ids = copy_folder(service, file['id'], file['title'], parentid=new_folderid)
 			new_created_ids += sub_created_ids
 		else:
-			copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
+			# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
+			copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
 			new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
 
 	return new_created_ids
@@ -449,10 +523,12 @@ def make_a_copy_of_shared_files(service, shared_files):
 	for file in shared_files:
 		if file['parents'][0]['isRoot']:
 			if file['mimeType'] == 'application/vnd.google-apps.folder':
+				# have to check more
 				new_folderids = copy_folder(service, file['id'], file['title'])
 				new_files_map += new_folderids
 			else:
-				new_fileid = copy_file(service, file['id'], file['title'])
+				# new_fileid = copy_file(service, file['id'], file['title'])
+				new_fileid = copy_unique_file(service, file)
 				new_files_map.append({'src_id': file['id'], 'dest_id': new_fileid})
 			# print "Copy file %s from shared with me" % (file['title'])
 
