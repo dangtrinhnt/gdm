@@ -7,6 +7,11 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 ### Updates
 
 
+##### + 12/09/2013:
+
++ Rename duplicate files/folders of all users by modified date
+
+
 ##### + 12/05/2013:
 
 + Get accounts which have duplicate files/folders
@@ -41,6 +46,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 + google-api-python-client==1.2
 + httplib2==0.8
 + pyOpenSSL==0.13.1
++ python-dateutil==2.2
 
 
 ### Troubleshooting
