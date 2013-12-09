@@ -77,6 +77,19 @@ def has_dup_file(files):
 	return False
 
 
+def get_unique_file_name_list(files):
+	unique_file_name = []
+	for file in files:
+		if file['parents']:
+			file_item = {}
+			file_item['mimeType'] = file['mimeType']
+			file_item['parentid'] = file['parents'][0]['id']
+			file_item['title'] = file['title']
+			if file_item not in unique_file_name:
+				unique_file_name.append(file_item)
+	return unique_file_name
+
+
 
 # check if the src_file is newer than the dest_file
 def is_newer(src_file, dest_file):
@@ -87,10 +100,3 @@ def is_newer(src_file, dest_file):
 		return True
 
 	return False
-
-def get_filename_list(files):
-	filename_list = []
-	for file in files:
-		if file['title'] not in filename_list:
-			filename_list.append(file['title'])
-	return filename_list
