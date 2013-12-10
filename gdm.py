@@ -48,9 +48,9 @@ def google_drive_migrate(csv_file, condition_number):
 						disable_sharing(src_service, shared_perms_list)
 
 						# Step 4. copy permissions
-						# if new_files_map:
-						# 	print "Copy permissions of all files of %s" % email_pair['src_email']
-						# 	copy_perms(src_service, dest_service, email_pair['src_email'], email_pair['dest_email'], new_files_map)
+						if new_files_map:
+							print "Copy permissions of all files of %s" % email_pair['src_email']
+							copy_perms(src_service, dest_service, email_pair['src_email'], email_pair['dest_email'], new_files_map)
 					else:
 						print "User %s has no file" % email_pair['dest_email']
 				else:

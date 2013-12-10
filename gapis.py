@@ -314,6 +314,8 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 
 
 def copy_unique_file(service, org_file, parentid=None):
+	print "Copying file %s of parentid %s" % (org_file['title'], parentid)
+
 	org_title = clean_query_string(org_file['title'])
 	query = "title = '%s' and trashed = false and mimeType = '%s'" \
 				% (org_title, org_file['mimeType'])
@@ -324,7 +326,7 @@ def copy_unique_file(service, org_file, parentid=None):
 	existed_files = search_files(service, query)
 	if existed_files:
 		for file in existed_files:
-			if not is_newer(file, org_file):
+			if is_older(file, org_file):
 				# 1. delete existed file
 				print "Delete existed file %s" % (file['title'])
 				delete_file(service, file['id'])
@@ -529,22 +531,26 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 	else:
 		new_folderid = insert_folder(service, folder_title, folder_title, parentid)
 
+	print "New Copied folder: title = %s; id = %s" % (folder_title, new_folderid)
 	new_created_ids.append({'src_id': folder_id, 'dest_id': new_folderid})
 
 	# copy the children files and folders
 	query_string = "'%s' in parents" % (folder_id)
 	files = search_files(service, query_string)
-	for file in files:
-		if file['mimeType'] == 'application/vnd.google-apps.folder':
-			sub_created_ids = copy_unique_folder(service, file['id'], file['title'], parentid=new_folderid)
-			if sub_created_ids:
-				new_created_ids += sub_created_ids
-		else:
-			# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
-			copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
-			if copied_fileid:
-				new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
-
+	if files:
+		print "All children of folder %s" % folder_title
+		for file in files:
+			print "+ %s" % file['title']
+			if file['mimeType'] == 'application/vnd.google-apps.folder':
+				sub_created_ids = copy_unique_folder(service, file['id'], file['title'], parentid=new_folderid)
+				if sub_created_ids:
+					new_created_ids += sub_created_ids
+			else:
+				# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
+				copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
+				if copied_fileid:
+					new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
+		print "Finish copying children of folder %s\n" % folder_title
 	return new_created_ids
 
 
@@ -578,7 +584,7 @@ def make_a_copy_of_shared_files(service, shared_files):
 	new_files_map = []
 	for file in shared_files:
 		if file['parents'][0]['isRoot']:
-			print "Copying %s" % file['title']
+			print "Copying %s in root" % file['title']
 			if file['mimeType'] == 'application/vnd.google-apps.folder':
 				# have to check more
 				new_folderids = copy_unique_folder(service, file['id'], file['title'])
