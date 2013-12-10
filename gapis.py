@@ -174,7 +174,7 @@ def retrieve_perms(service, obj_id):
 	return None
 
 
-def insert_perm(service, obj_id, value, perm_type, role):
+def insert_perm(service, obj_id, value, perm_type, role, additionalRoles=[]):
 	"""Insert a new permission.
 
 	Args:
@@ -193,6 +193,8 @@ def insert_perm(service, obj_id, value, perm_type, role):
 		'type': perm_type,
 		'role': role
 	}
+	if additionalRoles:
+		new_permission['additionalRoles'] = additionalRoles
 	param = {}
 	param['sendNotificationEmails'] = False
 	try:
@@ -218,9 +220,12 @@ def copy_perm(src_service, dest_service, src_user_email, dest_user_email, src_ob
 					if perm['emailAddress'] != dest_user_email:
 						perm_type = perm['type']
 						role = perm['role']
+						additionalRoles = []
+						if 'additionalRoles' in perm.keys():
+							additionalRoles = perm['additionalRoles']
 						print "Copy perm role %s for %s to file %s of user %s" \
 								% (role, perm['emailAddress'], dest_obj_id, dest_user_email)
-						insert_perm(dest_service, dest_obj_id, value, perm_type, role)
+						insert_perm(dest_service, dest_obj_id, value, perm_type, role, additionalRoles)
 
 
 
