@@ -100,3 +100,7 @@ def is_newer(src_file, dest_file):
 		return True
 
 	return False
+
+
+def clean_query_string(title):
+	return title.replace(r"'", r"\'")

@@ -54,12 +54,12 @@ def create_drive_service(service_account_pkcs12_file,\
 
 	credentials = SignedJwtAssertionCredentials(service_account_email, key,\
 						scope=scope, sub=user_email)
-	print "Finish getting credentials"
+	print "Finish getting credentials for user %s" % user_email
 
 	http = httplib2.Http()
 	http = credentials.authorize(http)
 
-	print "Finish authorize"
+	print "Finish authorize user %s" % user_email
 
 	try:
 		drive_service = build('drive', 'v2', http=http)
@@ -196,7 +196,7 @@ def insert_perm(service, obj_id, value, perm_type, role):
 	param = {}
 	param['sendNotificationEmails'] = False
 	try:
-		perm = service.permissions().insert(
+		perm = service.permissions().insert( \
 					fileId=obj_id, body=new_permission, **param).execute()
 		return perm['id']
 	except errors.HttpError, error:
@@ -209,14 +209,19 @@ def insert_perm(service, obj_id, value, perm_type, role):
 # copy file permissions across domains using service account
 def copy_perm(src_service, dest_service, src_user_email, dest_user_email, src_obj_id, dest_obj_id):
 	src_perms = retrieve_perms(src_service, src_obj_id)
-	for perm in src_perms:
-		if 'emailAddress' in perm.keys():
-			dest_domain = dest_user_email.split('@')[1]
-			value = switch_email_domain(perm['emailAddress'], dest_domain)
-			if perm['emailAddress'] != src_user_email:
-				perm_type = perm['type']
-				role = perm['role']
-				insert_perm(dest_service, dest_obj_id, value, perm_type, role)
+	if src_perms:
+		for perm in src_perms:
+			if 'emailAddress' in perm.keys():
+				dest_domain = dest_user_email.split('@')[1]
+				value = switch_email_domain(perm['emailAddress'], dest_domain)
+				if perm['emailAddress'] != src_user_email:
+					if perm['emailAddress'] != dest_user_email:
+						perm_type = perm['type']
+						role = perm['role']
+						print "Copy perm role %s for %s to file %s of user %s" \
+								% (role, perm['emailAddress'], dest_obj_id, dest_user_email)
+						insert_perm(dest_service, dest_obj_id, value, perm_type, role)
+
 
 
 def remove_perm(service, obj_id, permission_id):
@@ -309,7 +314,9 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 
 
 def copy_unique_file(service, org_file, parentid=None):
-	query = "title = '%s' and trashed = false" % org_file['title']
+	org_title = clean_query_string(org_file['title'])
+	query = "title = '%s' and trashed = false and mimeType = '%s'" \
+				% (org_title, org_file['mimeType'])
 	if parentid:
 		query += " and '%s' in parents" % parentid
 	else:
@@ -317,14 +324,18 @@ def copy_unique_file(service, org_file, parentid=None):
 	existed_files = search_files(service, query)
 	if existed_files:
 		for file in existed_files:
-			if file['mimeType'] == org_file['mimeType']:
-				if not is_newer(file, org_file):
-					# 1. delete existed file
-					delete_file(service, file['id'])
-					# 2. copy new file
-					return copy_file(service, org_file['id'], org_file['title'], parentid)
+			if not is_newer(file, org_file):
+				# 1. delete existed file
+				print "Delete existed file %s" % (file['title'])
+				delete_file(service, file['id'])
+				# 2. copy new file
+			else:
+				print "Skip copying file %s" % org_file['title']
+				return None
 
-	return None
+	print "Finish copying file %s" % (org_file['title'])
+
+	return copy_file(service, org_file['id'], org_file['title'], parentid)
 
 
 def delete_file(service, file_id):
@@ -356,7 +367,7 @@ def search_files(service, query_string):
 			if not page_token:
 				break
 		except errors.HttpError, error:
-			print 'An error occurred: %s' % error
+			print 'Error when searching file: %s' % error
 			break
 
 	return result
@@ -484,13 +495,58 @@ def copy_folder(service, folder_id, folder_title, parentid=None):
 	for file in files:
 		if file['mimeType'] == 'application/vnd.google-apps.folder':
 			sub_created_ids = copy_folder(service, file['id'], file['title'], parentid=new_folderid)
-			new_created_ids += sub_created_ids
+			if sub_created_ids:
+				new_created_ids += sub_created_ids
 		else:
 			# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
 			copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
-			new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
+			if copied_fileid:
+				new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
 
 	return new_created_ids
+
+
+
+def copy_unique_folder(service, folder_id, folder_title, parentid=None):
+	# 1. create a folder with the same name in mydrive
+	# 2. make a copy of all files in the source folder
+	# 3. Assign the new folder as parents of the copied files
+
+	new_created_ids = []
+
+	folder_title = clean_query_string(folder_title)
+	# copy the folder
+	# check if there is any existed folder
+	query = "title = '%s' and mimeType = 'application/vnd.google-apps.folder' \
+				and trashed = false" % (folder_title)
+	if parentid:
+		query += " and '%s' in parents" % parentid
+	else:
+		query += " and 'root' in parents"
+	existed_folders = search_files(service, query)
+	if existed_folders:
+		new_folderid = existed_folders[0]['id']
+	else:
+		new_folderid = insert_folder(service, folder_title, folder_title, parentid)
+
+	new_created_ids.append({'src_id': folder_id, 'dest_id': new_folderid})
+
+	# copy the children files and folders
+	query_string = "'%s' in parents" % (folder_id)
+	files = search_files(service, query_string)
+	for file in files:
+		if file['mimeType'] == 'application/vnd.google-apps.folder':
+			sub_created_ids = copy_unique_folder(service, file['id'], file['title'], parentid=new_folderid)
+			if sub_created_ids:
+				new_created_ids += sub_created_ids
+		else:
+			# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
+			copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
+			if copied_fileid:
+				new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
+
+	return new_created_ids
+
 
 #########################################################################
 
@@ -499,7 +555,7 @@ def copy_folder(service, folder_id, folder_title, parentid=None):
 
 # files_map = [ {'src': 'src_email@domain.com', 'dest': 'dest_email@domain.com', 'files': fileslist}, {}, ]
 
-def share_files_with_another(service, files_map=[]):
+def share_files_with_another(service, files_map):
 	perm_type = 'user'
 	role = 'reader'
 
@@ -522,14 +578,17 @@ def make_a_copy_of_shared_files(service, shared_files):
 	new_files_map = []
 	for file in shared_files:
 		if file['parents'][0]['isRoot']:
+			print "Copying %s" % file['title']
 			if file['mimeType'] == 'application/vnd.google-apps.folder':
 				# have to check more
-				new_folderids = copy_folder(service, file['id'], file['title'])
-				new_files_map += new_folderids
+				new_folderids = copy_unique_folder(service, file['id'], file['title'])
+				if new_folderids:
+					new_files_map += new_folderids
 			else:
 				# new_fileid = copy_file(service, file['id'], file['title'])
 				new_fileid = copy_unique_file(service, file)
-				new_files_map.append({'src_id': file['id'], 'dest_id': new_fileid})
+				if new_fileid:
+					new_files_map.append({'src_id': file['id'], 'dest_id': new_fileid})
 			# print "Copy file %s from shared with me" % (file['title'])
 
 	return new_files_map
@@ -542,5 +601,8 @@ def disable_sharing(service, perms_list):
 
 def copy_perms(src_service, dest_service, src_user_email, dest_user_email, new_files_map):
 	for file_map in new_files_map:
-		copy_perm(src_service, dest_service, src_user_email,\
-					dest_user_email, file_map['src_id'], file_map['dest_id'])
+		if file_map['dest_id']:
+			copy_perm(src_service, dest_service, src_user_email,\
+						dest_user_email, file_map['src_id'], file_map['dest_id'])
+		else:
+			print "Missing dest_id when copying permissions of %s" % src_user_email

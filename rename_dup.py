@@ -17,15 +17,16 @@ from dateutil import parser
 # have that name. 
 # 3. If the result has more than one file, process rename
 
-# dup_files_dict = {'timestamp1': file1, 'timestamp2': file2,}
+# dup_files_dict = { datetime_obj1: file1, datetime_obj2: file2,}
 def rename_dup_files_by_modified_date(service, dup_files_dict):
 	order = dup_files_dict.keys()
-	order.sort(reverse=True) # keys list in sorted order, DESC
+	order.sort(reverse=True) # keys list in DESC order
 	for i in order:
 		if order.index(i) > 0:
 			new_title = dup_files_dict[i]['title'] + " (" \
 								+ str(order.index(i)) + ")"
 			rename_file(service, dup_files_dict[i]['id'], new_title)
+
 
 # rename duplicate files of a single user
 def rename_all_dup_files(service):
@@ -45,10 +46,11 @@ def rename_all_dup_files(service):
 
 
 # rename duplicate files of all users from a list
+# email_list = [{'usename': 'abc', 'email': 'abc@mydomain.com'}, {},...]
 def rename_all_users_dup_files(src_csv, condition_number):
 	email_list = get_dict_data_from_csv_file(src_csv)
 	for email in email_list:
-		num = str_to_num(email['username']) % 10
+		num = str_to_num(email['email']) % 10
 		if num in condition_number:
 			print "Processing %s" % (email['email'])
 			service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
