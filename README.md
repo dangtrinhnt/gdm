@@ -7,6 +7,13 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 ### Updates
 
 
+##### + 12/11/2013:
+
++ Tested with multiple accounts:
+    * Got error 500 when copying file error.csv. OK after re-running the script.
+    * Got error "Bad return..." when copying permissions. OK after re-running the script.
+
+
 ##### + 12/10/2013:
 
 + Copy unique files and folders (including children files and folders)
