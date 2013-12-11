@@ -17,7 +17,7 @@ def export_user_has_dup_file(src_csv, dest_csv, condition_number):
 	email_list = get_dict_data_from_csv_file(src_csv)
 	has_dup_file_users = []
 	for email in email_list:
-		num = str_to_num(email['username']) % 10
+		num = str_to_num(email['email']) % 10
 		if num in condition_number:
 			print "Processing %s" % (email['email'])
 			service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
