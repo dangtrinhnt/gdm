@@ -1,6 +1,7 @@
 #! /usr/bin/python
 
 import httplib2
+# import simplejson
 
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
@@ -123,7 +124,7 @@ def insert_file(service, title, description, mime_type, filename, parent_id=None
 		return file['id']
 
 	except errors.HttpError, error:
-		print 'An error occured: %s' % error
+		print 'Insert file error: %s' % error
 
 	return None
 
@@ -169,7 +170,7 @@ def retrieve_perms(service, obj_id):
 		permissions = service.permissions().list(fileId=obj_id).execute()
 		return permissions.get('items', [])
 	except errors.HttpError, error:
-		print 'An error occurred: %s' % error
+		print 'Retrieve permissions error: %s' % error
 
 	return None
 
@@ -195,14 +196,14 @@ def insert_perm(service, obj_id, value, perm_type, role, additionalRoles=[]):
 	}
 	if additionalRoles:
 		new_permission['additionalRoles'] = additionalRoles
-	param = {}
-	param['sendNotificationEmails'] = False
+	# param = {}
+	# param['sendNotificationEmails'] = False
 	try:
 		perm = service.permissions().insert( \
-					fileId=obj_id, body=new_permission, **param).execute()
+					fileId=obj_id, body=new_permission, sendNotificationEmails=False).execute()
 		return perm['id']
 	except errors.HttpError, error:
-		print 'An error occurred: %s' % error
+		print 'Insert permission error: %s' % error
 
 	return None
 
@@ -241,7 +242,7 @@ def remove_perm(service, obj_id, permission_id):
 		service.permissions().delete(
 			fileId=obj_id, permissionId=permission_id).execute()
 	except errors.HttpError, error:
-		print 'An error occurred: %s' % error
+		print 'Remove permissions error: %s' % error
 
 
 
@@ -313,7 +314,7 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 					fileId=origin_file_id, body=copied_file).execute()
 		return file['id']
 	except errors.HttpError, error:
-		print 'An error occurred: %s' % error
+		print 'Copy file error: %s' % error
 
 	return None
 
@@ -355,7 +356,7 @@ def delete_file(service, file_id):
 	try:
 		service.files().delete(fileId=file_id).execute()
 	except errors.HttpError, error:
-		print 'An error occurred: %s' % error
+		print 'Delete file error: %s' % error
 
 
 def search_files(service, query_string):
@@ -418,7 +419,7 @@ def rename_file(service, file_id, new_title):
 
 		return updated_file
 	except errors.HttpError, error:
-		print 'An error occurred: %s' % error
+		print 'Rename file error: %s' % error
 
 	return None
 
@@ -483,7 +484,7 @@ def insert_folder(service, title, desc, parentid=None):
 		# pprint.pprint(folder)
 		return folder['id']
 	except errors.HttpError, error:
-		print 'An error occurred: %s' % error
+		print 'Insert folder error: %s' % error
 	return None
 
 
