@@ -1,6 +1,7 @@
 #! /usr/bin/python
 
 import httplib2
+from httplib import BadStatusLine
 # import simplejson
 
 from apiclient.discovery import build
@@ -85,6 +86,9 @@ def get_file(service, file_id):
 	try:
 		file = service.files().get(fileId=file_id).execute()
 		return file
+	except BadStatusLine, badstatus:
+		print 'Error when getting file by id: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
 
@@ -122,7 +126,9 @@ def insert_file(service, title, description, mime_type, filename, parent_id=None
 					body=body,
 					media_body=media_body).execute()
 		return file['id']
-
+	except BadStatusLine, badstatus:
+		print 'Error when inserting file: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Insert file error: %s' % error
 
@@ -151,6 +157,9 @@ def retrieve_all(service):
 			page_token = files.get('nextPageToken')
 			if not page_token:
 				break
+		except BadStatusLine, badstatus:
+			print 'Error when retrieving all files: %s' % badstatus
+			break
 		except errors.HttpError, error:
 			print 'An error occurred: %s' % error
 			break
@@ -169,6 +178,9 @@ def retrieve_perms(service, obj_id):
 	try:
 		permissions = service.permissions().list(fileId=obj_id).execute()
 		return permissions.get('items', [])
+	except BadStatusLine, badstatus:
+		print 'Error when retrieving permissions: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Retrieve permissions error: %s' % error
 
@@ -202,6 +214,9 @@ def insert_perm(service, obj_id, value, perm_type, role, additionalRoles=[]):
 		perm = service.permissions().insert( \
 					fileId=obj_id, body=new_permission, sendNotificationEmails=False).execute()
 		return perm['id']
+	except BadStatusLine, badstatus:
+		print 'Error when inserting permission: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Insert permission error: %s' % error
 
@@ -241,6 +256,9 @@ def remove_perm(service, obj_id, permission_id):
 	try:
 		service.permissions().delete(
 			fileId=obj_id, permissionId=permission_id).execute()
+	except BadStatusLine, badstatus:
+		print 'Error when removing permission: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Remove permissions error: %s' % error
 
@@ -257,6 +275,9 @@ def get_perm_id_for_email(service, email):
 		id_resp = service.permissions().getIdForEmail(email=email).execute()
 		# print id_resp['id']
 		return id_resp['id']
+	except BadStatusLine, badstatus:
+		print 'Error when getting permission id for email: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'An error occured: %s' % error
 
@@ -313,6 +334,9 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 		file = service.files().copy(
 					fileId=origin_file_id, body=copied_file).execute()
 		return file['id']
+	except BadStatusLine, badstatus:
+		print 'Error when copying file: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Copy file error: %s' % error
 
@@ -320,7 +344,7 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 
 
 def copy_unique_file(service, org_file, parentid=None):
-	print "Copying file %s of parentid %s" % (org_file['title'].encode('utf8'), parentid)
+	print "Copying file %s of parentid %s" % (org_file['id'], parentid)
 
 	org_title = clean_query_string(org_file['title'])
 	query = "title = '%s' and trashed = false and mimeType = '%s'" \
@@ -341,7 +365,7 @@ def copy_unique_file(service, org_file, parentid=None):
 				print "Skip copying file %s" % org_file['title'].encode('utf8')
 				return None
 
-	print "Finish copying file %s" % (org_file['title'].encode('utf8'))
+	print "Finish copying file %s" % (org_file['id'])
 
 	return copy_file(service, org_file['id'], org_file['title'], parentid)
 
@@ -355,6 +379,9 @@ def delete_file(service, file_id):
 	"""
 	try:
 		service.files().delete(fileId=file_id).execute()
+	except BadStatusLine, badstatus:
+		print 'Error when deleting file: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Delete file error: %s' % error
 
@@ -374,6 +401,9 @@ def search_files(service, query_string):
 			page_token = files.get('nextPageToken')
 			if not page_token:
 				break
+		except BadStatusLine, badstatus:
+			print 'Error when searching files: %s' % badstatus
+			break
 		except errors.HttpError, error:
 			print 'Error when searching file: %s' % error
 			break
@@ -418,6 +448,9 @@ def rename_file(service, file_id, new_title):
 							fields='title').execute()
 
 		return updated_file
+	except BadStatusLine, badstatus:
+		print 'Error when renaming file: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Rename file error: %s' % error
 
@@ -459,6 +492,9 @@ def update_file(service, file_id, new_title, new_description, new_mime_type,
 			newRevision=new_revision,
 			media_body=media_body).execute()
 		return updated_file
+	except BadStatusLine, badstatus:
+		print 'Error when updating file: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'An error occurred: %s' % error
 
@@ -483,6 +519,9 @@ def insert_folder(service, title, desc, parentid=None):
 		folder = service.files().insert(body=body).execute()
 		# pprint.pprint(folder)
 		return folder['id']
+	except BadStatusLine, badstatus:
+		print 'Error when inserting folder: %s' % badstatus
+		# break
 	except errors.HttpError, error:
 		print 'Insert folder error: %s' % error
 	return None
@@ -537,7 +576,7 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 	else:
 		new_folderid = insert_folder(service, folder_title, folder_title, parentid)
 
-	print "New Copied folder: title = %s; id = %s" % (folder_title, new_folderid)
+	# print "New Copied folder: title = %s; id = %s" % (folder_title.encode('utf8'), new_folderid)
 	new_created_ids.append({'src_id': folder_id, 'dest_id': new_folderid})
 
 	# copy the children files and folders
