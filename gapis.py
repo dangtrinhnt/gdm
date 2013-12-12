@@ -230,8 +230,14 @@ def copy_perm(src_service, dest_service, src_user_email, dest_user_email, src_ob
 	if src_perms:
 		for perm in src_perms:
 			if 'emailAddress' in perm.keys():
-				dest_domain = dest_user_email.split('@')[1]
-				value = switch_email_domain(perm['emailAddress'], dest_domain)
+				# if only the user is in our domain
+				src_domain = src_user_email.split('@')[1]
+				if src_domain in perm['emailAddress']:
+					dest_domain = dest_user_email.split('@')[1]
+					value = switch_email_domain(perm['emailAddress'], dest_domain)
+				else:
+					value = perm['emailAddress']
+
 				if perm['emailAddress'] != src_user_email:
 					if perm['emailAddress'] != dest_user_email:
 						perm_type = perm['type']
@@ -363,7 +369,9 @@ def copy_unique_file(service, org_file, parentid=None):
 				# 2. copy new file
 			else:
 				print "Skip copying file %s" % org_file['title'].encode('utf8')
-				return None
+				# should return the existed file's id
+				return file['id']
+				# return None
 
 	print "Finish copying file %s" % (org_file['id'])
 
