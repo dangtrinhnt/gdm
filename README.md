@@ -11,7 +11,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 + Tested with multiple accounts:
     * Got error 500 when copying file error.csv. OK after re-running the script.
-    * Got error "Bad return..." when copying permissions. OK after re-running the script.
+    * Got error "httplib.BadStatusLine: ''" when copying permissions. Fixed by catch BadStatusLine exception in "search_files".
 
 
 ##### + 12/10/2013:
