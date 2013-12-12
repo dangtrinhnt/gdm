@@ -7,6 +7,13 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 ### Updates
 
 
+##### + 12/12/2013:
+
++ Catch httplib.BadStatusLine exception on all query functionalities (insert, update, delete...)
++ Still return the file['id'] if the file existed and newer when copying (for copy permissions)
++ encode('utf8') when printing out info to console
+
+
 ##### + 12/11/2013:
 
 + Tested with multiple accounts:

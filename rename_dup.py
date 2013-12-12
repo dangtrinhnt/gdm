@@ -37,10 +37,11 @@ def rename_all_dup_files(service):
 			dup_files_dict = {}
 			for file in files:
 				if file['mimeType'] == fn['mimeType']:
-					if file['parents'][0]['id'] == fn['parentid']:
-						if file['title'] == fn['title']:
-							dt = parser.parse(file['modifiedDate'])
-							dup_files_dict[dt] = file
+					if file['parents']:
+						if file['parents'][0]['id'] == fn['parentid']:
+							if file['title'] == fn['title']:
+								dt = parser.parse(file['modifiedDate'])
+								dup_files_dict[dt] = file
 			if len(dup_files_dict) > 1:
 				rename_dup_files_by_modified_date(service, dup_files_dict)
 
