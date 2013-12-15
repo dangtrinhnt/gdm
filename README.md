@@ -7,6 +7,11 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 ### Updates
 
 
+##### + 12/15/2013:
+
++ Test with 876 users and finish migrating in > 2 days
+
+
 ##### + 12/12/2013:
 
 + Catch httplib.BadStatusLine exception on all query functionalities (insert, update, delete...)
