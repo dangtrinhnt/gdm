@@ -16,6 +16,9 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 	> **len(filename_list) < len(files)**
 
++ Get parents of a file by fileId
+
+
 ##### + 12/15/2013:
 
 + Test with 876 users and finish migrating in > 2 days
