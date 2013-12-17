@@ -23,27 +23,33 @@ def rename_dup_files_by_modified_date(service, dup_files_dict):
 	order.sort(reverse=True) # keys list in DESC order
 	for i in order:
 		if order.index(i) > 0:
+			print "Renaming file %s" % dup_files_dict[i]['title']
 			new_title = dup_files_dict[i]['title'] + " (" \
 								+ str(order.index(i)) + ")"
-			rename_file(service, dup_files_dict[i]['id'], new_title)
+			updated_file = rename_file(service, dup_files_dict[i]['id'], new_title)
+			if updated_file:
+				print "File %s has been renamed to %s" % (dup_files_dict[i]['title'], new_title)
+			else:
+				print "Fail to rename file %s" % dup_files_dict[i]['title']
 
 
 # rename duplicate files of a single user
-def rename_all_dup_files(service):
-	files = retrieve_own_files(service)
+def rename_all_dup_files(service, user_email):
+	files = get_own_files(service, user_email)
 	if files:
 		filename_list = get_unique_file_name_list(files)
-		for fn in filename_list:
-			dup_files_dict = {}
-			for file in files:
-				if file['mimeType'] == fn['mimeType']:
-					if file['parents']:
-						if file['parents'][0]['id'] == fn['parentid']:
-							if file['title'] == fn['title']:
-								dt = parser.parse(file['modifiedDate'])
-								dup_files_dict[dt] = file
-			if len(dup_files_dict) > 1:
-				rename_dup_files_by_modified_date(service, dup_files_dict)
+		if len(filename_list) < len(files):
+			for fn in filename_list:
+				dup_files_dict = {}
+				for file in files:
+					if file['mimeType'] == fn['mimeType']:
+						if file['parents']:
+							if file['parents'][0]['id'] == fn['parentid']:
+								if file['title'] == fn['title']:
+									dt = parser.parse(file['modifiedDate'])
+									dup_files_dict[dt] = file
+				if len(dup_files_dict) > 1:
+					rename_dup_files_by_modified_date(service, dup_files_dict)
 
 
 
@@ -53,17 +59,20 @@ def rename_all_users_dup_files(src_csv, condition_number):
 	email_list = get_dict_data_from_csv_file(src_csv)
 	for email in email_list:
 		num = str_to_num(email['email']) % 10
-		if num in condition_number:
+		if num in condition_number or condition_number[0]==-1:
 			print "Processing %s" % (email['email'])
 			service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
 							SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email['email'])
 			if service:
-				rename_all_dup_files(service)
+				rename_all_dup_files(service, email['email'])
 			print "Finish renaming duplicate files of user %s" % (email['email'])
 
 
 
 if __name__ == "__main__":
 	src_csv = sys.argv[1]
-	condition_number = map(int, sys.argv[2].split(','))
+	if sys.argv[2] == 'all':
+		condition_number = [-1]
+	else:
+		condition_number = map(int, sys.argv[2].split(','))
 	rename_all_users_dup_files(src_csv, condition_number)

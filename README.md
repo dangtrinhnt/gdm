@@ -6,6 +6,15 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 ### Updates
 
+##### + 12/17/2013:
+
++ Get files in which the processing user is the owners with query:
+
+	> **"'username@mydomain.com' in owners and trashed = false"**
+
++ Do not start renaming files process if length of the unique file names is equal the number of files, which mean there is no duplicate file:
+
+	> **len(filename_list) < len(files)**
 
 ##### + 12/15/2013:
 

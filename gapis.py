@@ -434,6 +434,33 @@ def retrieve_own_files(service):
 				tmp.append(file)
 
 	return tmp
+	
+
+def get_own_files(service, user_email):
+	query = "'%s' in owners and trashed = false" % user_email
+	files = search_files(service, query)
+	return files
+
+
+
+def get_parents(service, file_id):
+	"""Print a file's parents.
+	
+	Args:
+		service: Drive API service instance.
+		file_id: ID of the file to print parents for.
+	"""
+	try:
+		parents = service.parents().list(fileId=file_id).execute()
+		#~ for parent in parents['items']:
+		  #~ print 'File Id: %s' % parent['id']
+		return parents
+	except BadStatusLine, badstatus:
+		print 'BadStatusLine error when getting parents of file (%s): %s' % (file_id, badstatus)
+	except errors.HttpError, error:
+		print 'HttpError when getting parents of file (%s): %s' % (file_id, error)
+
+	return None
 
 
 def rename_file(service, file_id, new_title):
