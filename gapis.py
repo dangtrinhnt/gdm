@@ -548,8 +548,9 @@ def copy_unique_file(service, org_file, parentid=None):
 	print "Copying file %s of parentid %s" % (org_file['id'], parentid)
 	#~ org_title = org_file['title']
 	org_title = clean_query_string(org_file['title'])
-	query = "'me' in owners and title = '%s' and trashed = false and mimeType = '%s'" \
-				% (org_title, org_file['mimeType'])
+	query = "'me' in owners and title = '%s' and trashed = false" \
+				% org_title
+
 	if parentid:
 		query += " and '%s' in parents" % parentid
 	else:
@@ -558,12 +559,17 @@ def copy_unique_file(service, org_file, parentid=None):
 	if existed_files:
 		tmp = {}
 		for file in existed_files:
-			if is_older(file, org_file):
-				print "Delete existed file %s" % (file['title'].encode('utf8'))
-				delete_file(service, file['id'])
-			else:
-				#~ print "Skip copying file %s" % org_file['title'].encode('utf8')
-				tmp[parser.parse(file['modifiedDate'])] = file
+			if org_file['mimeType'] == file['mimeType'] \
+				or (org_file['mimeType'] == 'application/vnd.google-apps.spreadsheet' \
+					and file['mimeType'] == 'application/vnd.google-apps.form'):
+				
+				if is_older(file, org_file):
+					print "Delete existed file %s" % (file['title'].encode('utf8'))
+					delete_file(service, file['id'])
+				else:
+					#~ print "Skip copying file %s" % org_file['title'].encode('utf8')
+					tmp[parser.parse(file['modifiedDate'])] = file
+
 		if len(tmp) >= 2: #rename duplicate files and return the unchanged file
 			print "Skip copying file and rename duplicate files"
 			return rename_dup_files_by_modified_date(service, tmp)
@@ -572,9 +578,6 @@ def copy_unique_file(service, org_file, parentid=None):
 			return tmp.values()[0]['id']
 
 	copied_file = copy_file(service, org_file, parentid)
-
-	if copied_file['mimeType'] != org_file['mimeType']:
-		copied_file = change_mimeType_file(service, copied_file['id'], org_file['mimeType'])
 
 	print "Finish copying file %s" % (org_file['id'])
 
