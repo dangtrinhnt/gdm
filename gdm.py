@@ -32,22 +32,22 @@ def google_drive_migrate(csv_file, condition_number):
 									SERVICE_ACCOUNT, OAUTH_SCOPE, email['dest'])
 				if dest_service:
 
-					allfiles = get_own_files(src_service)
+					files = get_own_files(src_service)
 
-					if allfiles:
-						files_map = [{'src': email['src'], 'dest': email['dest'], 'files': allfiles}]
+					if files:
+						files_map = [{'src': email['src'], 'dest': email['dest'], 'files': files}]
 
 						# Step 1. share files with new account
 						print "Share permissions to destionation account %s" % email['dest']
-						shared_perms_list = share_files_with_another(src_service, files_map)
+						perms, shared_files = share_files(src_service, files_map)
 
 						# Step 2. make a copy of shared files in new account
 						print "Make a copy of shared files of user %s" % email['dest']
-						new_files_map = make_a_copy_of_shared_files(dest_service, allfiles)
+						new_files_map = make_a_copy(dest_service, shared_files)
 
 						# Step 3. disable sharing on source account
 						print "Disable sharing on source account %s" % email['src']
-						disable_sharing(src_service, shared_perms_list)
+						disable_sharing(src_service, perms)
 
 						# Step 4. copy permissions
 						if new_files_map:

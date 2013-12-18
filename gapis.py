@@ -208,8 +208,7 @@ def insert_perm(service, obj_id, value, perm_type, role, additionalRoles=[]):
 	}
 	if additionalRoles:
 		new_permission['additionalRoles'] = additionalRoles
-	# param = {}
-	# param['sendNotificationEmails'] = False
+
 	try:
 		perm = service.permissions().insert( \
 					fileId=obj_id, body=new_permission, sendNotificationEmails=False).execute()
@@ -337,8 +336,7 @@ def copy_file(service, origin_file_id, copy_title, parentid=None):
 		copied_file['parents'] = [{'id': parentid}]
 
 	try:
-		file = service.files().copy(
-					fileId=origin_file_id, body=copied_file).execute()
+		file = service.files().copy(fileId=origin_file_id, body=copied_file).execute()
 		return file['id']
 	except BadStatusLine, badstatus:
 		print 'Error when copying file: %s' % badstatus
@@ -353,7 +351,7 @@ def copy_unique_file(service, org_file, parentid=None):
 	print "Copying file %s of parentid %s" % (org_file['id'], parentid)
 
 	org_title = clean_query_string(org_file['title'])
-	query = "title = '%s' and trashed = false and mimeType = '%s'" \
+	query = "'me' in owners and title = '%s' and trashed = false and mimeType = '%s'" \
 				% (org_title, org_file['mimeType'])
 	if parentid:
 		query += " and '%s' in parents" % parentid
@@ -373,9 +371,11 @@ def copy_unique_file(service, org_file, parentid=None):
 				return file['id']
 				# return None
 
+	copied_fileid = copy_file(service, org_file['id'], org_file['title'], parentid)
+
 	print "Finish copying file %s" % (org_file['id'])
 
-	return copy_file(service, org_file['id'], org_file['title'], parentid)
+	return copied_fileid
 
 
 def delete_file(service, file_id):
@@ -604,8 +604,10 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 	folder_title = clean_query_string(folder_title)
 	# copy the folder
 	# check if there is any existed folder
-	query = "title = '%s' and mimeType = 'application/vnd.google-apps.folder' \
-				and trashed = false" % (folder_title)
+	query = "'me' in owners and title = '%s' \
+				and mimeType = 'application/vnd.google-apps.folder' \
+				and trashed = false" \
+				% (folder_title)
 	if parentid:
 		query += " and '%s' in parents" % parentid
 	else:
@@ -616,26 +618,28 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 	else:
 		new_folderid = insert_folder(service, folder_title, folder_title, parentid)
 
-	# print "New Copied folder: title = %s; id = %s" % (folder_title.encode('utf8'), new_folderid)
-	new_created_ids.append({'src_id': folder_id, 'dest_id': new_folderid})
+	if new_folderid:
+		new_created_ids.append({'src_id': folder_id, 'dest_id': new_folderid})
+	
+		# copy the children files and folders
+		query_string = "'me' in owners and '%s' in parents and trashed = false" \
+						% (folder_id)
+		files = search_files(service, query_string)
+		if files:
+			print "All children of folder %s" % folder_title.encode('utf8')
+			for file in files:
+				print "+ %s" % file['title'].encode('utf8')
+				if file['mimeType'] == 'application/vnd.google-apps.folder':
+					sub_created_ids = copy_unique_folder(service, file['id'], file['title'], parentid=new_folderid)
+					if sub_created_ids:
+						new_created_ids += sub_created_ids
+				else:
+					# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
+					copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
+					if copied_fileid:
+						new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
+			print "Finish copying children of folder %s\n" % folder_title.encode('utf8')
 
-	# copy the children files and folders
-	query_string = "'%s' in parents" % (folder_id)
-	files = search_files(service, query_string)
-	if files:
-		print "All children of folder %s" % folder_title.encode('utf8')
-		for file in files:
-			print "+ %s" % file['title'].encode('utf8')
-			if file['mimeType'] == 'application/vnd.google-apps.folder':
-				sub_created_ids = copy_unique_folder(service, file['id'], file['title'], parentid=new_folderid)
-				if sub_created_ids:
-					new_created_ids += sub_created_ids
-			else:
-				# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
-				copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
-				if copied_fileid:
-					new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
-		print "Finish copying children of folder %s\n" % folder_title.encode('utf8')
 	return new_created_ids
 
 
@@ -645,49 +649,44 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 # main operations for migration
 
 # files_map = [ {'src': 'src_email@domain.com', 'dest': 'dest_email@domain.com', 'files': fileslist}, {}, ]
-
-def share_files_with_another(service, files_map):
+def share_files(service, files_map):
 	perm_type = 'user'
 	role = 'reader'
 
 	perms_list = []
-
+	shared_files = []
 	for fm in files_map:
 		for file in fm['files']:
-			# print "Parent is: %s\n" % file['parents']
-			# only share files and folders in root folder
+			# only share files and folders in root
 			if file['parents']:
 				if file['parents'][0]['isRoot']:
 					permid = insert_perm(service, file['id'], fm['dest'], perm_type, role)
 					if permid:
 						perm_pair = {'fileid': file['id'], 'permid': permid}
 						perms_list.append(perm_pair)
-				# print "Share file %s of %s with %s" % (file['title'], fm['src'], fm['dest'])
+						shared_files.append(file)
 
-	return perms_list
+	return perms_list, shared_files
 
-
-def make_a_copy_of_shared_files(service, shared_files):
+# make a copy of shared files
+def make_a_copy(service, shared_files):
 	new_files_map = []
 	for file in shared_files:
 		if file['parents']:
 			if file['parents'][0]['isRoot']:
-				# print "Copying %s in root" % file['title']
 				if file['mimeType'] == 'application/vnd.google-apps.folder':
 					# have to check more
 					new_folderids = copy_unique_folder(service, file['id'], file['title'])
 					if new_folderids:
 						new_files_map += new_folderids
 				else:
-					# new_fileid = copy_file(service, file['id'], file['title'])
 					new_fileid = copy_unique_file(service, file)
 					if new_fileid:
 						new_files_map.append({'src_id': file['id'], 'dest_id': new_fileid})
-				# print "Copy file %s from shared with me" % (file['title'])
 
 	return new_files_map
 
-
+# perms_list = [{'fileid': <fileid>, 'permid': <permid>}, {...},]
 def disable_sharing(service, perms_list):
 	for perm in perms_list:
 		remove_perm(service, perm['fileid'], perm['permid'])
