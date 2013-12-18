@@ -19,7 +19,7 @@ def google_drive_migrate(csv_file, condition_number):
 		num = str_to_num(email['src']) % 10
 		if num in condition_number or condition_number[0]==-1:
 
-			src_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
+			src_service = create_drive_service(SERVICE_ACCOUNT_PRIVATE_KEY,\
 							SERVICE_ACCOUNT, OAUTH_SCOPE, email['src'])
 			if src_service:
 				print "Processing %s" % (email['src'])

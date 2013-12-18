@@ -6,6 +6,18 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 ### Updates
 
+##### + 12/18/2013:
+
++ Get user's own files by query:
+
+	> **"'me' in owners"**
+
++ Add **"'me' in owners"** to query when searching files
++ Simplify functions's name
++ **share_files** function returns permission id list and shared files list
++ Pass shared files list to make_a_copy instead of all files.
+
+
 ##### + 12/17/2013:
 
 + Get files in which the processing user is the owners with query:
