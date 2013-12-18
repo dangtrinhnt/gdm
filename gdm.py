@@ -12,52 +12,54 @@ from rename_dup import rename_all_dup_files
 
 
 
-# email_list = [{'src_email': 'genius@olddomain.com', 'dest_email': 'genius@newdomain.com'}]
+# email_list = [{'src': 'genius@olddomain.com', 'dest': 'genius@newdomain.com'}]
 def google_drive_migrate(csv_file, condition_number):
 	email_map_list =  get_dict_data_from_csv_file(csv_file)
-	for email_pair in email_map_list:
-		num = str_to_num(email_pair['src_email']) % 10
+	for email in email_map_list:
+		num = str_to_num(email['src']) % 10
 		if num in condition_number or condition_number[0]==-1:
 
 			src_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
-							SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email_pair['src_email'])
+							SERVICE_ACCOUNT, OAUTH_SCOPE, email['src'])
 			if src_service:
-				print "Processing %s" % (email_pair['src_email'])
+				print "Processing %s" % (email['src'])
 				# rename duplicate files/folders before migrating
-				print "Renaming duplicate files and folders of user %s" % (email_pair['src_email'])
+				print "Renaming duplicate files and folders of user %s" % (email['src'])
 				rename_all_dup_files(src_service)
-				print "Finish renaming files and folders of user %s" % (email_pair['src_email'])
+				print "Finish renaming files and folders of user %s" % (email['src'])
 
 				dest_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
-									SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email_pair['dest_email'])
+									SERVICE_ACCOUNT, OAUTH_SCOPE, email['dest'])
 				if dest_service:
-					allfiles = retrieve_own_files(src_service)
+
+					allfiles = get_own_files(src_service)
+
 					if allfiles:
-						files_map = [{'src': email_pair['src_email'], 'dest': email_pair['dest_email'], 'files': allfiles}]
+						files_map = [{'src': email['src'], 'dest': email['dest'], 'files': allfiles}]
 
 						# Step 1. share files with new account
-						print "Share permissions to destionation account %s" % email_pair['dest_email']
+						print "Share permissions to destionation account %s" % email['dest']
 						shared_perms_list = share_files_with_another(src_service, files_map)
 
 						# Step 2. make a copy of shared files in new account
-						print "Make a copy of shared files of user %s" % email_pair['dest_email']
+						print "Make a copy of shared files of user %s" % email['dest']
 						new_files_map = make_a_copy_of_shared_files(dest_service, allfiles)
 
 						# Step 3. disable sharing on source account
-						print "Disable sharing on source account %s" % email_pair['src_email']
+						print "Disable sharing on source account %s" % email['src']
 						disable_sharing(src_service, shared_perms_list)
 
 						# Step 4. copy permissions
 						if new_files_map:
-							print "Copy permissions of all files of %s" % email_pair['src_email']
-							copy_perms(src_service, dest_service, email_pair['src_email'], email_pair['dest_email'], new_files_map)
+							print "Copy permissions of all files of %s" % email['src']
+							copy_perms(src_service, dest_service, email['src'], email['dest'], new_files_map)
 					else:
-						print "User %s has no file" % email_pair['dest_email']
+						print "User %s has no file" % email['dest']
 				else:
-					print "Canot initiate drive service of user %s. Skipped!" % (email_pair['dest_email'])
+					print "Canot initiate drive service of user %s. Skipped!" % (email['dest'])
 			else:
-				print "Skip processing user %s" % (email_pair['src_email'])
-			print "Finish migrating user %s" % (email_pair['src_email'])
+				print "Skip processing user %s" % (email['src'])
+			print "Finish migrating user %s" % (email['src'])
 
 #########################################################################
 

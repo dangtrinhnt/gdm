@@ -34,8 +34,8 @@ def rename_dup_files_by_modified_date(service, dup_files_dict):
 
 
 # rename duplicate files of a single user
-def rename_all_dup_files(service, user_email):
-	files = get_own_files(service, user_email)
+def rename_all_dup_files(service):
+	files = get_own_files(service)
 	if files:
 		filename_list = get_unique_file_name_list(files)
 		if len(filename_list) < len(files):
@@ -64,7 +64,7 @@ def rename_all_users_dup_files(src_csv, condition_number):
 			service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
 							SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email['email'])
 			if service:
-				rename_all_dup_files(service, email['email'])
+				rename_all_dup_files(service)
 			print "Finish renaming duplicate files of user %s" % (email['email'])
 
 

@@ -436,11 +436,16 @@ def retrieve_own_files(service):
 	return tmp
 	
 
-def get_own_files(service, user_email):
+def get_own_files_by_email(service, user_email):
 	query = "'%s' in owners and trashed = false" % user_email
 	files = search_files(service, query)
 	return files
 
+
+def get_own_files(service):
+	query = "'me' in owners and trashed =false"
+	files = search_files(service, query)
+	return files
 
 
 def get_parents(service, file_id):
