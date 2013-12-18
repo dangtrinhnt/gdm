@@ -28,7 +28,7 @@ def google_drive_migrate(csv_file, condition_number):
 				rename_all_dup_files(src_service)
 				print "Finish renaming files and folders of user %s" % (email['src'])
 
-				dest_service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
+				dest_service = create_drive_service(SERVICE_ACCOUNT_PRIVATE_KEY,\
 									SERVICE_ACCOUNT, OAUTH_SCOPE, email['dest'])
 				if dest_service:
 
