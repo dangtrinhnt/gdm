@@ -2,7 +2,7 @@
 
 import httplib2
 from httplib import BadStatusLine
-# import simplejson
+from dateutil import parser
 
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
@@ -10,6 +10,7 @@ from apiclient import errors
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import SignedJwtAssertionCredentials
 from oauth2client.client import AccessTokenRefreshError
+
 
 from commons import *
 
@@ -317,67 +318,6 @@ def get_existed_files(service, org_obj_id, parentid='root'):
 	return same_title_files, is_existed, is_old
 
 
-# make a copy of a file on a same account
-def copy_file(service, origin_file_id, copy_title, parentid=None):
-	"""Copy an existing file.
-
-	Args:
-		service: Drive API service instance.
-		origin_file_id: ID of the origin file to copy.
-		copy_title: Title of the copy.
-
-	Returns:
-		The copied file if successful, None otherwise.
-	"""
-	copied_file = {'title': copy_title}
-
-	# if the copying file is a child of a folder
-	if parentid:
-		copied_file['parents'] = [{'id': parentid}]
-
-	try:
-		file = service.files().copy(fileId=origin_file_id, body=copied_file).execute()
-		return file['id']
-	except BadStatusLine, badstatus:
-		print 'Error when copying file: %s' % badstatus
-		# break
-	except errors.HttpError, error:
-		print 'Copy file error: %s' % error
-
-	return None
-
-
-def copy_unique_file(service, org_file, parentid=None):
-	print "Copying file %s of parentid %s" % (org_file['id'], parentid)
-
-	org_title = clean_query_string(org_file['title'])
-	query = "'me' in owners and title = '%s' and trashed = false and mimeType = '%s'" \
-				% (org_title, org_file['mimeType'])
-	if parentid:
-		query += " and '%s' in parents" % parentid
-	else:
-		query += " and 'root' in parents"
-	existed_files = search_files(service, query)
-	if existed_files:
-		for file in existed_files:
-			if is_older(file, org_file):
-				# 1. delete existed file
-				print "Delete existed file %s" % (file['title'].encode('utf8'))
-				delete_file(service, file['id'])
-				# 2. copy new file
-			else:
-				print "Skip copying file %s" % org_file['title'].encode('utf8')
-				# should return the existed file's id
-				return file['id']
-				# return None
-
-	copied_fileid = copy_file(service, org_file['id'], org_file['title'], parentid)
-
-	print "Finish copying file %s" % (org_file['id'])
-
-	return copied_fileid
-
-
 def delete_file(service, file_id):
 	"""Permanently delete a file, skipping the trash.
 
@@ -541,6 +481,106 @@ def update_file(service, file_id, new_title, new_description, new_mime_type,
 	return None
 
 
+
+def change_mimeType_file(service, file_id, new_mime_type):
+	#~ try:
+		#~ # First retrieve the file from the API.
+		#~ file = service.files().get(fileId=file_id).execute()
+#~ 
+		#~ # File's new metadata.
+		#~ file['mimeType'] = new_mime_type
+		#~ filename = file['title']
+#~ 
+		#~ # File's new content.
+		#~ media_body = MediaFileUpload(
+			#~ filename, mimetype=new_mime_type, resumable=True)
+#~ 
+		#~ # Send the request to the API.
+		#~ updated_file = service.files().update(
+			#~ fileId=file_id,
+			#~ body=file,
+			#~ media_body=media_body).execute()
+		#~ return updated_file
+	#~ except BadStatusLine, badstatus:
+		#~ print 'Error when updating file: %s' % badstatus
+		#~ # break
+	#~ except errors.HttpError, error:
+		#~ print 'An error occurred: %s' % error
+#~ 
+	#~ return None
+	pass
+
+
+
+# make a copy of a file on a same account
+def copy_file(service, org_file, parentid=None):
+	"""Copy an existing file.
+
+	Args:
+		service: Drive API service instance.
+		origin_file_id: ID of the origin file to copy.
+		copy_title: Title of the copy.
+
+	Returns:
+		The copied file if successful, None otherwise.
+	"""
+	body = {}
+	body['title'] = org_file['title']
+	body['mimeType'] = org_file['mimeType']
+
+	# if the copying file is a child of a folder
+	if parentid:
+		body['parents'] = [{'id': parentid}]
+
+	try:
+		copied_file = service.files().copy(fileId=org_file['id'], body=body).execute()
+		return copied_file
+	except BadStatusLine, badstatus:
+		print 'Error when copying file: %s' % badstatus
+		# break
+	except errors.HttpError, error:
+		print 'Copy file error: %s' % error
+
+	return None
+
+
+def copy_unique_file(service, org_file, parentid=None):
+	print "Copying file %s of parentid %s" % (org_file['id'], parentid)
+	#~ org_title = org_file['title']
+	org_title = clean_query_string(org_file['title'])
+	query = "'me' in owners and title = '%s' and trashed = false and mimeType = '%s'" \
+				% (org_title, org_file['mimeType'])
+	if parentid:
+		query += " and '%s' in parents" % parentid
+	else:
+		query += " and 'root' in parents"
+	existed_files = search_files(service, query)
+	if existed_files:
+		tmp = {}
+		for file in existed_files:
+			if is_older(file, org_file):
+				print "Delete existed file %s" % (file['title'].encode('utf8'))
+				delete_file(service, file['id'])
+			else:
+				#~ print "Skip copying file %s" % org_file['title'].encode('utf8')
+				tmp[parser.parse(file['modifiedDate'])] = file
+		if len(tmp) >= 2: #rename duplicate files and return the unchanged file
+			print "Skip copying file and rename duplicate files"
+			return rename_dup_files_by_modified_date(service, tmp)
+		elif len(tmp) == 1:
+			print "Skip copying file"
+			return tmp.values()[0]['id']
+
+	copied_file = copy_file(service, org_file, parentid)
+
+	if copied_file['mimeType'] != org_file['mimeType']:
+		copied_file = change_mimeType_file(service, copied_file['id'], org_file['mimeType'])
+
+	print "Finish copying file %s" % (org_file['id'])
+
+	return copied_file['id']
+
+
 #########################################################################
 
 ###################### Folder ###########################################
@@ -585,7 +625,6 @@ def copy_folder(service, folder_id, folder_title, parentid=None):
 			if sub_created_ids:
 				new_created_ids += sub_created_ids
 		else:
-			# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
 			copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
 			if copied_fileid:
 				new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
@@ -634,7 +673,6 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 					if sub_created_ids:
 						new_created_ids += sub_created_ids
 				else:
-					# copied_fileid = copy_file(service, file['id'], file['title'], parentid=new_folderid)
 					copied_fileid = copy_unique_file(service, file, parentid=new_folderid)
 					if copied_fileid:
 						new_created_ids.append({'src_id': file['id'], 'dest_id': copied_fileid})
@@ -643,7 +681,49 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 	return new_created_ids
 
 
-#########################################################################
+########################################################################
+
+################## Rename duplicate files ##############################
+
+# dup_files_dict = { datetime_obj1: file1, datetime_obj2: file2,}
+def rename_dup_files_by_modified_date(service, dup_files_dict):
+	order = dup_files_dict.keys()
+	order.sort(reverse=True) # keys list in DESC order
+	for i in order:
+		if order.index(i) > 0:
+			print "Renaming file %s" % dup_files_dict[i]['title']
+			new_title = dup_files_dict[i]['title'] + " (" \
+								+ str(order.index(i)) + ")"
+			updated_file = rename_file(service, dup_files_dict[i]['id'], new_title)
+			if updated_file:
+				print "File %s has been renamed to %s" % (dup_files_dict[i]['title'], new_title)
+			else:
+				print "Fail to rename file %s" % dup_files_dict[i]['title']
+
+	return dup_files_dict[order[0]]['id']
+
+
+# rename duplicate files of a single user
+def rename_all_dup_files(service):
+	files = get_own_files(service)
+	if files:
+		filename_list = get_unique_file_name_list(files)
+		if len(filename_list) < len(files):
+			for fn in filename_list:
+				dup_files_dict = {}
+				for file in files:
+					if file['mimeType'] == fn['mimeType']:
+						if file['parents']:
+							if file['parents'][0]['id'] == fn['parentid']:
+								if file['title'] == fn['title']:
+									dt = parser.parse(file['modifiedDate'])
+									dup_files_dict[dt] = file
+				if len(dup_files_dict) > 1:
+					rename_dup_files_by_modified_date(service, dup_files_dict)
+
+########################################################################
+
+
 
 
 # main operations for migration

@@ -8,7 +8,7 @@ else:
 	from settings import *
 import sys
 from commons import *
-from dateutil import parser
+#~ from dateutil import parser
 
 
 
@@ -16,41 +16,6 @@ from dateutil import parser
 # 2. loop through filenamelist, for each name, get all files
 # have that name. 
 # 3. If the result has more than one file, process rename
-
-# dup_files_dict = { datetime_obj1: file1, datetime_obj2: file2,}
-def rename_dup_files_by_modified_date(service, dup_files_dict):
-	order = dup_files_dict.keys()
-	order.sort(reverse=True) # keys list in DESC order
-	for i in order:
-		if order.index(i) > 0:
-			print "Renaming file %s" % dup_files_dict[i]['title']
-			new_title = dup_files_dict[i]['title'] + " (" \
-								+ str(order.index(i)) + ")"
-			updated_file = rename_file(service, dup_files_dict[i]['id'], new_title)
-			if updated_file:
-				print "File %s has been renamed to %s" % (dup_files_dict[i]['title'], new_title)
-			else:
-				print "Fail to rename file %s" % dup_files_dict[i]['title']
-
-
-# rename duplicate files of a single user
-def rename_all_dup_files(service):
-	files = get_own_files(service)
-	if files:
-		filename_list = get_unique_file_name_list(files)
-		if len(filename_list) < len(files):
-			for fn in filename_list:
-				dup_files_dict = {}
-				for file in files:
-					if file['mimeType'] == fn['mimeType']:
-						if file['parents']:
-							if file['parents'][0]['id'] == fn['parentid']:
-								if file['title'] == fn['title']:
-									dt = parser.parse(file['modifiedDate'])
-									dup_files_dict[dt] = file
-				if len(dup_files_dict) > 1:
-					rename_dup_files_by_modified_date(service, dup_files_dict)
-
 
 
 # rename duplicate files of all users from a list
@@ -61,8 +26,8 @@ def rename_all_users_dup_files(src_csv, condition_number):
 		num = str_to_num(email['email']) % 10
 		if num in condition_number or condition_number[0]==-1:
 			print "Processing %s" % (email['email'])
-			service = create_drive_service(SERVICE_ACCOUNT_PKCS12_FILE,\
-							SERVICE_ACCOUNT_EMAIL, OAUTH_SCOPE, email['email'])
+			service = create_drive_service(SERVICE_ACCOUNT_PRIVATE_KEY,\
+							SERVICE_ACCOUNT, OAUTH_SCOPE, email['email'])
 			if service:
 				rename_all_dup_files(service)
 			print "Finish renaming duplicate files of user %s" % (email['email'])

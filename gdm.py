@@ -8,7 +8,7 @@ else:
 	from settings import *
 from gapis import *
 from commons import *
-from rename_dup import rename_all_dup_files
+#~ from rename_dup import rename_all_dup_files
 
 
 
