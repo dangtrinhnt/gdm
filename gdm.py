@@ -38,15 +38,17 @@ def google_drive_migrate(csv_file, condition_number):
 						files_map = [{'src': email['src'], 'dest': email['dest'], 'files': files}]
 
 						# Step 1. share files with new account
-						print "Share permissions to destionation account %s" % email['dest']
+						print "\nShare permissions to destionation account %s\n" % email['dest']
 						perms, shared_files = share_files(src_service, files_map)
 
+						print "Share %s files\n" % len(shared_files)
+
 						# Step 2. make a copy of shared files in new account
-						print "Make a copy of shared files of user %s" % email['dest']
+						print "Make a copy of shared files of user %s\n" % email['dest']
 						new_files_map = make_a_copy(dest_service, shared_files)
 
 						# Step 3. disable sharing on source account
-						print "Disable sharing on source account %s" % email['src']
+						print "Disable sharing on source account %s\n" % email['src']
 						disable_sharing(src_service, perms)
 
 						# Step 4. copy permissions
@@ -59,7 +61,7 @@ def google_drive_migrate(csv_file, condition_number):
 					print "Canot initiate drive service of user %s. Skipped!" % (email['dest'])
 			else:
 				print "Skip processing user %s" % (email['src'])
-			print "Finish migrating user %s" % (email['src'])
+			print "\nFinish migrating user %s\n" % (email['src'])
 
 #########################################################################
 

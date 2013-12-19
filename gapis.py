@@ -385,6 +385,7 @@ def get_own_files_by_email(service, user_email):
 def get_own_files(service):
 	query = "'me' in owners and trashed =false"
 	files = search_files(service, query)
+	print "\nGot %s files\n" % len(files)
 	return files
 
 
@@ -479,37 +480,6 @@ def update_file(service, file_id, new_title, new_description, new_mime_type,
 		print 'An error occurred: %s' % error
 
 	return None
-
-
-
-def change_mimeType_file(service, file_id, new_mime_type):
-	#~ try:
-		#~ # First retrieve the file from the API.
-		#~ file = service.files().get(fileId=file_id).execute()
-#~ 
-		#~ # File's new metadata.
-		#~ file['mimeType'] = new_mime_type
-		#~ filename = file['title']
-#~ 
-		#~ # File's new content.
-		#~ media_body = MediaFileUpload(
-			#~ filename, mimetype=new_mime_type, resumable=True)
-#~ 
-		#~ # Send the request to the API.
-		#~ updated_file = service.files().update(
-			#~ fileId=file_id,
-			#~ body=file,
-			#~ media_body=media_body).execute()
-		#~ return updated_file
-	#~ except BadStatusLine, badstatus:
-		#~ print 'Error when updating file: %s' % badstatus
-		#~ # break
-	#~ except errors.HttpError, error:
-		#~ print 'An error occurred: %s' % error
-#~ 
-	#~ return None
-	pass
-
 
 
 # make a copy of a file on a same account
@@ -664,7 +634,7 @@ def copy_unique_folder(service, folder_id, folder_title, parentid=None):
 		new_created_ids.append({'src_id': folder_id, 'dest_id': new_folderid})
 	
 		# copy the children files and folders
-		query_string = "'me' in owners and '%s' in parents and trashed = false" \
+		query_string = "'%s' in parents and trashed = false" \
 						% (folder_id)
 		files = search_files(service, query_string)
 		if files:
