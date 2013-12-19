@@ -8,7 +8,7 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 ##### + 12/19/2013:
 
-+ Not use "'me' in owners" query when searching for children files of shared files
++ Not use "'me' in owners" query when searching for children files of shared folders
 
 ##### + 12/18/2013:
 
