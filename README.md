@@ -6,9 +6,11 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 
 ### Updates
 
+
 ##### + 12/19/2013:
 
 + Not use "'me' in owners" query when searching for children files of shared folders
+
 
 ##### + 12/18/2013:
 
@@ -105,6 +107,36 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 + httplib2==0.8
 + pyOpenSSL==0.13.1
 + python-dateutil==2.2
+
+
+### Usage
+
+
+##### 1/ Create a virtualenv environment and install requirements:
+
+> **username@user-host**:/path/to/gdm$ virtualenv /home/.venv/your_env
+
+> **username@user-host**:/path/to/gdm$ source /home/.venv/your_env/bin/activate
+
+> **(your_env)username@user-host**:/path/to/gdm$ pip install -r requirements.txt
+
+
+##### 2/ Run the migration script to start the emails migrations:
+
+> **(your_env)username@user-host**:/path/to/gdm$ python gdm.py /path/to/email_mapping_list.csv <condition number>
+
+* email_mapping_list.csv (2 columns: src - old domain email address, dest - new domain email address):
+
+| src                     | dest                    |
+| ----------------------- | ----------------------- |
+| username1@olddomain.com | username1@newdomain.com |
+| username2@olddomain.com | username2@newdomain.com |
+| username3@olddomain.com | username3@newdomain.com |
+
+
+* condition number: all posible numbers are: 
+
+> 0,1,2,3,4,5,6,7,8,9 or 'all'
 
 
 ### Troubleshooting
