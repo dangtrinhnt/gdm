@@ -551,7 +551,10 @@ def copy_unique_file(service, org_file, parentid=None):
 
 	print "Finish copying file %s" % (org_file['id'])
 
-	return copied_file['id']
+	if copied_file:
+		return copied_file['id']
+
+	return None
 
 
 #########################################################################
