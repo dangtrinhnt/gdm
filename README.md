@@ -149,6 +149,10 @@ GDM will help you to migrate your Google Drive documents from one domain to anot
 + [_csv.Error: Could not determine delimiter](http://iambusychangingtheworld.blogspot.com/2013/12/python-csv-error-when-read-data-from.html)
 
 
+### Notes
+
++ I use only one Service Account because I migrated users's documents from sub.mydomain.com to mydomain.com. So, you need to create 2 Service Accounts, one for your old domain, one for your new domain. Then, you have to modify the gdm.py file to use the correct Service Account for each domain.
+
 ### References
 
 
