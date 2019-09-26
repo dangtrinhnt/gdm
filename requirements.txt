@@ -1,5 +1,5 @@
 Python==2.7.5
-google-api-python-client==1.2
+google-api-python-client==1.7.11
 httplib2==0.8
 pyOpenSSL==0.13.1
 python-dateutil==2.2
